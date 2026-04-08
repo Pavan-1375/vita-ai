@@ -1,10 +1,2 @@
-const trimSlash = (value: string) => value.replace(/\/+$/, '');
-
-const getBaseUrl = () => {
-  return 'https://web-production-fec62.up.railway.app';
-};
-
-export const apiUrl = (path: string) => {
-  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  return `${getBaseUrl()}${normalizedPath}`;
-};
+// This connects your beautiful React UI to your live FastAPI backend
+export const apiUrl = (path: string) => `https://vita-ai-backend-2.onrender.com${path}`;
