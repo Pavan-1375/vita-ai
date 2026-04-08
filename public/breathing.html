@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VitalAI Breathing Guide</title>
+    <style>
+      :root {
+        --bg1: #0f4f4a;
+        --bg2: #2f7f73;
+        --bg3: #8dcf8f;
+        --card: rgba(255, 255, 255, 0.14);
+        --text: #f8fffc;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: radial-gradient(circle at 20% 15%, #9fe1a7 0%, transparent 28%),
+          linear-gradient(140deg, var(--bg1), var(--bg2), var(--bg3));
+        color: var(--text);
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+
+      .panel {
+        width: min(760px, 100%);
+        background: var(--card);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        border-radius: 24px;
+        backdrop-filter: blur(10px);
+        padding: 24px;
+        box-shadow: 0 20px 50px rgba(9, 40, 36, 0.35);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(1.6rem, 2.8vw, 2.2rem);
+      }
+
+      p {
+        margin: 0;
+        opacity: 0.95;
+      }
+
+      .breath-area {
+        margin-top: 20px;
+        display: grid;
+        gap: 18px;
+      }
+
+      .bubble-wrap {
+        display: grid;
+        place-items: center;
+        min-height: 270px;
+      }
+
+      .bubble {
+        width: 170px;
+        height: 170px;
+        border-radius: 999px;
+        display: grid;
+        place-items: center;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.2);
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        box-shadow: 0 14px 30px rgba(8, 33, 30, 0.25);
+        transition: transform 0.8s ease, background-color 0.5s ease;
+        transform: scale(1);
+      }
+
+      .bubble.inhale {
+        transform: scale(1.2);
+        background: rgba(181, 255, 204, 0.28);
+      }
+
+      .bubble.hold {
+        transform: scale(1.2);
+        background: rgba(255, 255, 255, 0.26);
+      }
+
+      .bubble.exhale {
+        transform: scale(0.9);
+        background: rgba(180, 225, 255, 0.22);
+      }
+
+      .phase {
+        font-size: 1.4rem;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+      }
+
+      .timer {
+        font-size: 2.2rem;
+        font-weight: 900;
+        margin-top: 4px;
+      }
+
+      .controls {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      button {
+        border: 0;
+        border-radius: 999px;
+        padding: 10px 16px;
+        font-weight: 700;
+        cursor: pointer;
+        color: #0f4f4a;
+        background: #ffffff;
+      }
+
+      button.alt {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.22);
+        border: 1px solid rgba(255, 255, 255, 0.25);
+      }
+
+      .tips {
+        margin-top: 18px;
+        padding: 14px;
+        border-radius: 14px;
+        background: rgba(255, 255, 255, 0.12);
+        line-height: 1.5;
+      }
+
+      .small {
+        margin-top: 10px;
+        font-size: 0.92rem;
+        opacity: 0.9;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="panel">
+      <h1>VitalAI Breathing Tab</h1>
+      <p>Cycle: Inhale 4s, Hold 4s, Exhale 6s. Smooth and steady wins.</p>
+
+      <div class="breath-area">
+        <div class="bubble-wrap">
+          <div id="bubble" class="bubble inhale">
+            <div>
+              <div id="phase" class="phase">Inhale</div>
+              <div id="timer" class="timer">4</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="startBtn">Start</button>
+          <button id="pauseBtn" class="alt">Pause</button>
+          <button id="resetBtn" class="alt">Reset</button>
+        </div>
+      </div>
+
+      <div class="tips">
+        <strong>Quick tips:</strong>
+        <div>1. Drop your shoulders and unclench your jaw before you begin.</div>
+        <div>2. Breathe through your nose when possible.</div>
+        <div>3. Exhale a little longer than inhale to promote calm.</div>
+        <div>4. If you feel lightheaded, pause and breathe normally.</div>
+      </div>
+      <div class="small">
+        This is a wellness exercise, not medical treatment.
+      </div>
+    </section>
+
+    <script>
+      const phases = [
+        { name: "Inhale", duration: 4, cls: "inhale" },
+        { name: "Hold", duration: 4, cls: "hold" },
+        { name: "Exhale", duration: 6, cls: "exhale" },
+      ];
+
+      const phaseEl = document.getElementById("phase");
+      const timerEl = document.getElementById("timer");
+      const bubbleEl = document.getElementById("bubble");
+      const startBtn = document.getElementById("startBtn");
+      const pauseBtn = document.getElementById("pauseBtn");
+      const resetBtn = document.getElementById("resetBtn");
+
+      let phaseIndex = 0;
+      let timeLeft = phases[0].duration;
+      let intervalId = null;
+
+      function paint() {
+        const current = phases[phaseIndex];
+        phaseEl.textContent = current.name;
+        timerEl.textContent = String(timeLeft);
+        bubbleEl.className = `bubble ${current.cls}`;
+      }
+
+      function tick() {
+        if (timeLeft > 1) {
+          timeLeft -= 1;
+          paint();
+          return;
+        }
+        phaseIndex = (phaseIndex + 1) % phases.length;
+        timeLeft = phases[phaseIndex].duration;
+        paint();
+      }
+
+      function start() {
+        if (intervalId) return;
+        intervalId = window.setInterval(tick, 1000);
+      }
+
+      function pause() {
+        if (!intervalId) return;
+        window.clearInterval(intervalId);
+        intervalId = null;
+      }
+
+      function reset() {
+        pause();
+        phaseIndex = 0;
+        timeLeft = phases[0].duration;
+        paint();
+      }
+
+      startBtn.addEventListener("click", start);
+      pauseBtn.addEventListener("click", pause);
+      resetBtn.addEventListener("click", reset);
+      paint();
+    </script>
+  </body>
+</html>

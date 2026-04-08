@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouOkay? Project Architecture</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/black.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/serif.min.css">
+  <style>
+    .reveal .slides section { text-align: left; }
+    .reveal h1, .reveal h2 { color: #ff6d8a; font-family: 'serif'; }
+    .reveal pre { background: #1a1a1a; }
+    .reveal code { background: rgba(255,255,255,0.1); }
+    .brand-gradient { background: linear-gradient(135deg, #ff9a5a 0%, #ff6d8a 50%, #7a68ff 100%); }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <section>
+        <h1>YouOkay? Project</h1>
+        <h2>Full Architecture & Design</h2>
+        <p>Health PWA: Symptom AI, Trackers, Voice Consult</p>
+        <small>React + Vite + FastAPI + Gemini AI</small>
+      </section>
+
+      <section>
+        <h2>Overview</h2>
+        <ul>
+          <li><strong>Frontend PWA</strong> (CWD): React 19 + Vite + TS + Tailwind + PWA</li>
+          <li><strong>Backend Server</strong> (Desktop/hackathon/): Python FastAPI + ML + Gemini</li>
+          <li><strong>Connection</strong>: Vite proxy /api → backend:5000</li>
+          <li><strong>Run</strong>: npm run dev:all (auto-stack)</li>
+        </ul>
+        <p>Ports: FE :3000 | BE :5000</p>
+      </section>
+
+      <section>
+        <h2>File Structure</h2>
+        <pre><code>Frontend (vita-ai/)
+├── public/     # PWA: manifest, icons, SW
+├── src/
+│   ├── components/ # HomeScreen, ConsultScreen (AI)
+│   ├── lib/api.ts  # /api/* (proxied)
+│   └── App.tsx     # SPA screens
+├── scripts/
+│   └── start-stack-v3.ps1 # Stack orchestrator
+└── vite.config.ts  # Proxy config
+
+Backend (Desktop/hackathon/)
+├── api.py         # FastAPI: /predict, /claude
+└── ML model
+</code></pre>
+      </section>
+
+      <section>
+        <h2>Frontend Deep Dive</h2>
+        <ul>
+          <li>SPA: Screens (home/consult/remedies/insights) via state + AnimatePresence</li>
+          <li><strong>HomeScreen</strong>: Hydration/breathing trackers (localStorage), tips carousel</li>
+          <li><strong>ConsultScreen (Core)</strong>:
+            <ul>
+              <li>Symptoms text/voice → POST /api/predict</li>
+              <li>Response: Disease, Confidence, Triage, Precautions[], Remedies[]</li>
+              <li>Chat: /api/claude (Gemini)</li>
+              <li>Voice: Web Speech API</li>
+            </ul>
+          </li>
+          <li>PWA: Offline trackers/fallbacks</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Backend Deep Dive</h2>
+        <ul>
+          <li>FastAPI (uvicorn api:app --port 5000)</li>
+          <li><strong>/predict POST {symptoms:[]}</strong>: ML model → structured JSON</li>
+          <li><strong>/claude POST</strong>: Gemini AI reasoning (VITE_GEMINI_API_KEY)</li>
+          <li>Auto-reload: backend_dev_runner.py (watches files)</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Connection Flow</h2>
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==" alt="Diagram" style="width:800px;height:400px;background:linear-gradient(135deg,#ff9a5a,#ff6d8a,#7a68ff);border-radius:12px;">
+        <p>Frontend fetch('/api/predict') → <strong>Vite Proxy</strong> → Backend /predict</p>
+        <pre><code>vite.config.ts:
+proxy: {
+  '/api': {
+    target: 'http://127.0.0.1:5000',
+    rewrite: /^\/api/ → ''
+  }
+}
+</code></pre>
+      </section>
+
+      <section>
+        <h2>User Flow</h2>
+        <ol>
+          <li>npm run dev:all → Backend (:5000) + Vite (:3000) + Open PWA</li>
+          <li>Home: Track hydration/breathing, "Analyze Symptoms"</li>
+          <li>Consult:
+            <ul>
+              <li>Voice/text symptoms</li>
+              <li>→ /api/predict → ML JSON</li>
+              <li>Display: Disease/Conf/Triage/Precautions/Remedies</li>
+              <li>Chat fallback: /api/claude</li>
+            </ul>
+          </li>
+          <li>Offline: Local hardcoded predictions</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Key Features</h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;">
+          <ul>
+            <li>✅ Voice Input/Output</li>
+            <li>✅ Symptom ML Prediction</li>
+            <li>✅ Gemini AI Chat</li>
+            <li>✅ Trackers (localStorage)</li>
+          </ul>
+          <ul>
+            <li>✅ PWA Installable</li>
+            <li>✅ Auto Stack Mgmt</li>
+            <li>✅ Fallbacks (Offline/AI)</li>
+            <li>✅ Disclaimer (not diagnosis)</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <h2>Run & Deploy</h2>
+        <pre><code># Install & Run
+npm i
+npm run dev:all
+
+# Backend external: Desktop/hackathon/
+# (Set BACKEND_DIR if moved)
+
+# Build
+npm run build
+
+# Preview
+npm run preview
+
+# Prod: VITE_API_BASE_URL=your-backend.com
+</code></pre>
+        <p><strong>Deps</strong>: Gemini API key (.env)</p>
+      </section>
+
+      <section>
+        <h2>Strengths & Notes</h2>
+        <ul>
+          <li>Production-ready PWA</li>
+          <li>Seamless dev proxy</li>
+          <li>Robust fallbacks</li>
+          <li><em>Not medical advice</em> (disclaimed everywhere)</li>
+        </ul>
+        <p>Backend ML quality depends on hackathon/ model/dataset.</p>
+      </section>
+
+      <section>Thank you!</section>
+    </div>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/plugin/notes/notes.min.js"></script>
+  <script>
+    Reveal.initialize({
+      hash: true,
+      transition: 'slide',
+      width: '100%',
+      height: '100%',
+      margin: 0.1
+    });
+  </script>
+</body>
+</html>

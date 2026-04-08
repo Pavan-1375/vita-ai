@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Manrope:wght@300;400;500;600;700;800&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-headline: "Newsreader", serif;
+  --font-body: "Manrope", sans-serif;
+
+  --color-background: #fbf9f5;
+  --color-primary: #316342;
+  --color-primary-container: #4a7c59;
+  --color-on-primary: #ffffff;
+  --color-secondary: #516355;
+  --color-on-secondary: #ffffff;
+  --color-surface: #fbf9f5;
+  --color-surface-container-low: #f5f3ef;
+  --color-surface-container-high: #eae8e4;
+  --color-surface-container-lowest: #ffffff;
+  --color-on-surface: #1b1c1a;
+  --color-on-surface-variant: #414942;
+  --color-tertiary: #795100;
+  --color-tertiary-fixed: #ffddaf;
+  --color-on-tertiary-fixed-variant: #614000;
+  --color-error: #ba1a1a;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+  --color-outline-variant: #c1c9bf;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-on-surface font-body antialiased;
+  }
+
+  h1, h2, h3, h4, .font-serif {
+    @apply font-headline;
+  }
+}
+
+.apothecary-shadow {
+  box-shadow: 0 4px 32px rgba(49, 99, 66, 0.04);
+}
+
+.brand-gradient {
+  background: linear-gradient(135deg, #316342 0%, #4a7c59 100%);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

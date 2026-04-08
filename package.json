@@ -1,0 +1,44 @@
+{
+    "name": "react-example",
+    "private": true,
+    "version": "0.0.0",
+    "type": "module",
+    "scripts": {
+        "dev": "vite --strictPort --port=3000 --host=0.0.0.0",
+        "dev:all": "powershell -ExecutionPolicy Bypass -File .\\\\scripts\\\\start-stack-v3.ps1",
+        "dev:start": "powershell -ExecutionPolicy Bypass -File .\\\\scripts\\\\start-stack-v3.ps1",
+        "dev:stop": "powershell -ExecutionPolicy Bypass -File .\\scripts\\stop-stack.ps1",
+        "dev:autostart:install": "powershell -ExecutionPolicy Bypass -File .\\scripts\\install-autostart.ps1",
+        "dev:autostart:remove": "powershell -ExecutionPolicy Bypass -File .\\scripts\\remove-autostart.ps1",
+        "build": "vite build",
+        "preview": "vite preview",
+        "clean": "rm -rf dist",
+        "lint": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@google/genai": "^1.48.0",
+        "@tailwindcss/vite": "^4.1.14",
+        "@vitejs/plugin-react": "^5.0.4",
+        "clsx": "^2.1.1",
+        "dotenv": "^17.2.3",
+        "express": "^4.21.2",
+        "lucide-react": "^0.546.0",
+        "motion": "^12.38.0",
+        "react": "^19.2.4",
+        "react-dom": "^19.2.4",
+        "tailwind-merge": "^3.5.0"
+    },
+    "devDependencies": {
+        "@types/express": "^4.17.21",
+        "@types/node": "^22.14.0",
+        "@types/react": "^19.2.14",
+        "@types/react-dom": "^19.2.3",
+        "autoprefixer": "^10.4.21",
+        "tailwindcss": "^4.1.14",
+        "tsx": "^4.21.0",
+        "typescript": "~5.8.2",
+        "vercel": "^50.38.2",
+        "vite": "^6.4.1"
+    }
+}
+
