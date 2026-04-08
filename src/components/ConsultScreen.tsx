@@ -115,12 +115,32 @@ export const ConsultScreen = (_props: ConsultScreenProps) => {
   const [autoSpeakReplies, setAutoSpeakReplies] = useState(true);
   const [history, setHistory] = useState<HistoryItem[]>(() => readStoredHistory());
   const [showHistory, setShowHistory] = useState(false);
+  
+  // NEW: State for Autocomplete
+  const [allKnownSymptoms, setAllKnownSymptoms] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
   const quickPrompts = [
     'Should I see a doctor today?',
     'What should I avoid right now?',
     'Give me a short recovery routine.',
   ];
+
+  // NEW: Fetch all symptoms from backend when app loads
+  useEffect(() => {
+    const fetchSymptoms = async () => {
+      try {
+        const res = await fetch(apiUrl('/symptoms'));
+        if (res.ok) {
+          const data = await res.json();
+          setAllKnownSymptoms(data.symptoms || []);
+        }
+      } catch (err) {
+        console.error("Could not fetch symptom list", err);
+      }
+    };
+    fetchSymptoms();
+  }, []);
 
   useEffect(() => {
     synthRef.current = window.speechSynthesis;
@@ -135,6 +155,31 @@ export const ConsultScreen = (_props: ConsultScreenProps) => {
   }, [history]);
 
   const getTimestamp = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // NEW: Autocomplete Logic
+  const handleSymptomChange = (text: string) => {
+    setSymptoms(text);
+    // Find the word currently being typed (after the last comma)
+    const parts = text.split(',');
+    const currentWord = parts[parts.length - 1].trim().toLowerCase();
+    setShowSuggestions(currentWord.length > 0);
+  };
+
+  const getSuggestions = () => {
+    const parts = symptoms.split(',');
+    const currentWord = parts[parts.length - 1].trim().toLowerCase();
+    if (currentWord.length === 0) return [];
+    return allKnownSymptoms
+      .filter(s => s.toLowerCase().includes(currentWord))
+      .slice(0, 5); // Only show top 5 suggestions
+  };
+
+  const selectSuggestion = (suggestion: string) => {
+    const parts = symptoms.split(',');
+    parts[parts.length - 1] = ` ${suggestion}`; // Replace last typed word
+    setSymptoms(parts.join(',') + ', '); // Add comma to prepare for next symptom
+    setShowSuggestions(false);
+  };
 
   const speakMessage = (text: string) => {
     if (!autoSpeakReplies || !synthRef.current || !('SpeechSynthesisUtterance' in window)) return;
@@ -284,15 +329,14 @@ export const ConsultScreen = (_props: ConsultScreenProps) => {
   const analyzeSymptoms = async () => {
     if (!symptoms.trim()) return;
     setIsAnalyzing(true);
+    setShowSuggestions(false); // Hide dropdown when analyzing
 
     try {
-      // 1. SPLIT SYMPTOMS BY COMMA (This is what was missing!)
       const symptomList = symptoms
         .split(',')
         .map(s => s.trim().toLowerCase())
         .filter(s => s.length > 0);
 
-      // 2. Call the real backend API
       const aiRes = await fetch(apiUrl('/predict'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -306,14 +350,12 @@ export const ConsultScreen = (_props: ConsultScreenProps) => {
         finalResult = normalizePredictionResult(data);
       }
 
-      // 3. If API fails, show a clear error instead of fake data
       if (!finalResult) {
         setAnalysisResult('Error connecting to analysis engine. Please try again.');
         setIsAnalyzing(false);
         return;
       }
 
-      // 4. Format the result for your beautiful UI
       const analysisText = [
         `Predicted Disease: ${finalResult['Predicted Disease']}`,
         `Confidence: ${(finalResult.Confidence || 0).toFixed(0)}%`,
@@ -350,6 +392,8 @@ export const ConsultScreen = (_props: ConsultScreenProps) => {
     if (confirm('Clear history?')) setHistory([]);
   };
 
+  const suggestions = getSuggestions();
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col h-full w-full p-4 space-y-4">
       {/* Symptom Analysis Card */}
@@ -358,13 +402,37 @@ export const ConsultScreen = (_props: ConsultScreenProps) => {
           <Stethoscope className="text-primary" size={24} />
           <h2 className="text-xl font-bold text-primary">Symptom Analysis</h2>
         </div>
-        <textarea
-          value={symptoms}
-          onChange={(e) => setSymptoms(e.target.value)}
-          placeholder="Describe your symptoms (headache, fever, stomach pain, etc.)..."
-          className="w-full h-32 p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
-          rows={4}
-        />
+        
+        {/* NEW: Relative container for textarea + dropdown */}
+        <div className="relative">
+          <textarea
+            value={symptoms}
+            onChange={(e) => handleSymptomChange(e.target.value)}
+            onFocus={() => setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Hide after clicking
+            placeholder="Type symptoms separated by commas (e.g. headache, fever)..."
+            className="w-full h-32 p-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+            rows={4}
+          />
+          
+          {/* NEW: Autocomplete Dropdown */}
+          {showSuggestions && suggestions.length > 0 && (
+            <div className="absolute z-20 w-full bg-white border border-gray-200 rounded-xl shadow-lg mt-1 max-h-40 overflow-y-auto">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className="w-full text-left px-4 py-2 hover:bg-blue-50 text-sm text-gray-700 border-b border-gray-100 last:border-0"
+                  onMouseDown={(e) => e.preventDefault()} // Prevent blur before click
+                  onClick={() => selectSuggestion(s)}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         <Button
           onClick={analyzeSymptoms}
           disabled={isAnalyzing || !symptoms.trim()}
@@ -377,6 +445,7 @@ export const ConsultScreen = (_props: ConsultScreenProps) => {
           )}
           {isAnalyzing ? 'Analyzing...' : 'Analyze Symptoms'}
         </Button>
+        
         {analysisResult && (
           <div className="mt-6 p-6 bg-gradient-to-b from-gray-50 to-white border border-gray-200 rounded-2xl shadow-sm">
             <div className="text-sm leading-relaxed whitespace-pre-wrap font-mono text-gray-800">
