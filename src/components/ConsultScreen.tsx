@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { Card } from './Card';
 import { Button } from './Button';
@@ -281,57 +281,39 @@ export const ConsultScreen = (_props: ConsultScreenProps) => {
     setInput('');
   };
 
-  const getLocalSymptomPrediction = (symptomText: string) => {
-    const lowerText = symptomText.toLowerCase();
-    if (lowerText.includes('headache')) {
-      return {
-        'Predicted Disease': 'Tension Headache',
-        Confidence: 70,
-        Triage: 'low',
-        Precautions: ['Rest in dark room', 'Stay hydrated', 'Limit screens'],
-        'Home Remedies': ['Cold compress', 'Gentle neck stretch'],
-      };
-    }
-    if (lowerText.includes('fever')) {
-      return {
-        'Predicted Disease': 'Viral Fever',
-        Confidence: 65,
-        Triage: 'medium',
-        Precautions: ['Monitor temperature', 'Hydrate', 'Rest'],
-        'Home Remedies': ['Lukewarm sponge bath', 'Electrolytes'],
-      };
-    }
-    return null;
-  };
-
   const analyzeSymptoms = async () => {
     if (!symptoms.trim()) return;
     setIsAnalyzing(true);
 
     try {
-      const localResult = getLocalSymptomPrediction(symptoms);
-      let result: PredictionResult | null | undefined = localResult;
+      // 1. SPLIT SYMPTOMS BY COMMA (This is what was missing!)
+      const symptomList = symptoms
+        .split(',')
+        .map(s => s.trim().toLowerCase())
+        .filter(s => s.length > 0);
 
-      if (!result) {
-        const aiRes = await fetch(apiUrl('/predict'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ symptoms: [symptoms] }),
-        });
-        if (aiRes.ok) {
-          const data: any = await aiRes.json();
-          result = normalizePredictionResult(data?.result ?? data);
-        }
+      // 2. Call the real backend API
+      const aiRes = await fetch(apiUrl('/predict'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symptoms: symptomList }),
+      });
+
+      let finalResult: PredictionResult | null = null;
+
+      if (aiRes.ok) {
+        const data: any = await aiRes.json();
+        finalResult = normalizePredictionResult(data);
       }
 
-      const finalResult: PredictionResult = result || {
-        'Predicted Disease': 'General Symptoms',
-        Confidence: 50,
-        Triage: 'low',
-        Precautions: ['Monitor closely', 'Rest', 'Hydrate'],
-        'Home Remedies': ['Supportive care'],
-      };
+      // 3. If API fails, show a clear error instead of fake data
+      if (!finalResult) {
+        setAnalysisResult('Error connecting to analysis engine. Please try again.');
+        setIsAnalyzing(false);
+        return;
+      }
 
+      // 4. Format the result for your beautiful UI
       const analysisText = [
         `Predicted Disease: ${finalResult['Predicted Disease']}`,
         `Confidence: ${(finalResult.Confidence || 0).toFixed(0)}%`,
