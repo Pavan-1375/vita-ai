@@ -267,7 +267,10 @@ export const ConsultScreen = (_props: ConsultScreenProps) => {
         reply = (aiData.reply ?? aiData.response ?? '').trim();
       }
 
-      if (!reply) reply = generateAssistantReply(prompt);
+      // TRIGGER FALLBACK IF CLAUDE IS DEAD OR OUT OF CREDITS
+      if (!reply || reply.toLowerCase().includes("unavailable") || reply.toLowerCase().includes("offline")) {
+        reply = generateAssistantReply(prompt);
+      }
 
       const assistantMessage: Message = {
         role: 'assistant',
